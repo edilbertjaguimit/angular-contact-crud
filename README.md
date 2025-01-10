@@ -1,2 +1,2 @@
 # ContactCrud
-A CRUD Operation using Angular and ASP.Net Core Web API
+A CRUD Operation using Angular and ASP.Net Core Web API with EF Core
