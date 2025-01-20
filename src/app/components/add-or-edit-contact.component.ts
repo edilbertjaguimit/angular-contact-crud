@@ -20,7 +20,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-add-or-edit-contact',
@@ -38,15 +38,14 @@ import { Subject } from 'rxjs';
           (click)="stopPropagation($event)"
         >
           <div class="flex items-center justify-between">
-            <span class="text-black">{{ isInvalid() }}</span>
             <h2 class="text-xl">Add Contact</h2>
             <button
               type="button"
-              class="h-8 px-3 py-2"
+              class="h-8 px-3 py-2 bg-transparent text-black hover:text-white"
               hlmBtn
               (click)="closeModal()"
             >
-              Close
+              <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
           <form [formGroup]="contactAddOrEditForm" (ngSubmit)="handleSubmit()">
@@ -140,7 +139,12 @@ import { Subject } from 'rxjs';
               }}</span>
               }
             </div>
-            <button type="submit" class="w-full h-8 px-3 py-2 mt-5" hlmBtn>
+            <button
+              type="submit"
+              class="w-full h-8 px-3 py-2 mt-5"
+              hlmBtn
+              [disabled]="contactAddOrEditForm.invalid"
+            >
               Submit
             </button>
           </form>
@@ -159,6 +163,7 @@ export class AddOrEditContactComponent {
   private destroyed$ = new Subject<void>();
   isInvalidSignal = signal<boolean>(false);
   isInvalid = computed(() => this.isInvalidSignal());
+  newContact = signal<Contact | null>(null);
 
   public contactAddOrEditForm = this.formBuilder.group({
     id: this.formBuilder.nonNullable.control(0),
@@ -178,7 +183,7 @@ export class AddOrEditContactComponent {
     ]),
     mobile: this.formBuilder.nonNullable.control('', [
       Validators.required,
-      Validators.pattern(/^[0-9]{10}$/),
+      Validators.pattern(/^[0-9]{11}$/),
     ]),
     address: this.formBuilder.nonNullable.control('', [
       Validators.required,
@@ -211,7 +216,26 @@ export class AddOrEditContactComponent {
     }
     this.isInvalidSignal.set(false);
     console.log('submit');
-    // this.contactService.addContact(this.contactAddOrEditForm.value as Contact);
+    console.log(this.contactAddOrEditForm.value);
+    this.newContact.set(this.contactAddOrEditForm.value as Contact);
+    console.log(this.newContact());
+
+    this.contactService
+      .addContact({
+        contactId: 0,
+        contactFirstName: this.contactAddOrEditForm.value.firstName!,
+        contactLastName: this.contactAddOrEditForm.value.lastName!,
+        contactEmail: this.contactAddOrEditForm.value.email!,
+        contactMobileNumber: this.contactAddOrEditForm.value.mobile!,
+        contactAddress: this.contactAddOrEditForm.value.address!,
+        contactStatus: 'ACTIVE',
+      })
+      .pipe(takeUntil(this.destroyed$))
+      .subscribe({
+        next(value) {
+          console.log(value);
+        },
+      });
   }
 
   // FormGroup Validators
@@ -232,5 +256,10 @@ export class AddOrEditContactComponent {
     if (field.hasError('email')) return 'Invalid email address.';
     if (field.hasError('pattern')) return 'Invalid mobile number.';
     return '';
+  }
+  ngOnDestroy() {
+    this.destroyed$.next();
+    this.destroyed$.complete();
+    this.contactAddOrEditForm.reset();
   }
 }

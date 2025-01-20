@@ -1,7 +1,9 @@
 import {
   Component,
+  computed,
   ElementRef,
   inject,
+  model,
   signal,
   ViewChild,
 } from '@angular/core';
@@ -17,6 +19,7 @@ import { Contact } from '../models/contact.model';
 import { HlmInputDirective } from '@spartan-ng/ui-input-helm';
 import { HlmButtonDirective } from '@spartan-ng/ui-button-helm';
 import { AddOrEditContactComponent } from './add-or-edit-contact.component';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-contact',
@@ -30,6 +33,7 @@ import { AddOrEditContactComponent } from './add-or-edit-contact.component';
     HlmInputDirective,
     HlmButtonDirective,
     AddOrEditContactComponent,
+    FormsModule,
   ],
   template: `
     <div class="w-full">
@@ -42,25 +46,27 @@ import { AddOrEditContactComponent } from './add-or-edit-contact.component';
             class="h-8 px-3 py-2"
             (click)="openModal()"
           >
-            Add Contact
+            <i class="fa-solid fa-user-plus"></i>
           </button>
           <input
             type="text"
             hlmInput
             class="h-8 px-3 py-2"
             placeholder="Search"
+            [(ngModel)]="search"
           />
         </div>
         <hlm-table class="mt-5">
           <hlm-trow>
             <hlm-th class="flex-1">Id</hlm-th>
-            <hlm-th class="flex-1">Name</hlm-th>
+            <hlm-th class="flex-1 text-start">Name</hlm-th>
             <hlm-th class="flex-1">Email</hlm-th>
             <hlm-th class="flex-1">Mobile Number</hlm-th>
             <hlm-th class="flex-1">Address</hlm-th>
             <hlm-th class="flex-1">Status</hlm-th>
+            <hlm-th class="flex-1">Action</hlm-th>
           </hlm-trow>
-          @for(contact of contacts(); track $index){
+          @for(contact of filteredContacts(); track $index){
           <hlm-trow>
             <hlm-td class="flex-1">{{ contact.contactId }}</hlm-td>
             <hlm-td class="flex-1 text-nowrap"
@@ -71,6 +77,22 @@ import { AddOrEditContactComponent } from './add-or-edit-contact.component';
             <hlm-td class="flex-1">{{ contact.contactMobileNumber }}</hlm-td>
             <hlm-td class="flex-1">{{ contact.contactAddress }}</hlm-td>
             <hlm-td class="flex-1">{{ contact.contactStatus }}</hlm-td>
+            <hlm-td class="flex-1 flex gap-1">
+              <button
+                type="button"
+                hlmBtn
+                class="h-7 px-2 py-1 bg-transparent text-black border hover:text-white"
+              >
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button
+                type="button"
+                hlmBtn
+                class="h-7 px-2 py-1 bg-red-500 hover:opacity-80 hover:bg-red-500"
+              >
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </hlm-td>
           </hlm-trow>
           }
         </hlm-table>
@@ -87,8 +109,18 @@ export class ContactComponent {
 
   private readonly contactService = inject(ContactService);
   private readonly destryoed$ = new Subject<void>();
+  search = model('');
 
   contacts = signal<Contact[]>([]);
+
+  filteredContacts = computed(() => {
+    return this.contacts().filter(
+      (contact) =>
+        contact.contactFirstName.toLocaleLowerCase().includes(this.search()) ||
+        contact.contactLastName.toLocaleLowerCase().includes(this.search()) ||
+        contact.contactEmail.toLocaleLowerCase().includes(this.search())
+    );
+  });
 
   ngOnInit() {
     this.contactService
