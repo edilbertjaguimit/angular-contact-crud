@@ -21,6 +21,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
+import { stat } from 'fs';
 
 @Component({
   selector: 'app-add-or-edit-contact',
@@ -38,7 +39,13 @@ import { Subject, takeUntil } from 'rxjs';
           (click)="stopPropagation($event)"
         >
           <div class="flex items-center justify-between">
-            <h2 class="text-xl">Add Contact</h2>
+            <h2 class="text-xl">
+              {{
+                contactAddOrEditForm.value.id === 0
+                  ? 'Add Contact'
+                  : 'Edit Contact'
+              }}
+            </h2>
             <button
               type="button"
               class="h-8 px-3 py-2 bg-transparent text-black hover:text-white"
@@ -57,13 +64,9 @@ import { Subject, takeUntil } from 'rxjs';
                 class="h-8 px-3 py-2"
                 formControlName="firstName"
               />
-              @if(fieldHasError(contactAddOrEditForm.controls.firstName,
-              isInvalid())) {
+              @if(fieldHasError(contactAddOrEditForm.controls.firstName)) {
               <span class="text-red-500">{{
-                fieldErrorMessage(
-                  contactAddOrEditForm.controls.firstName,
-                  isInvalid()
-                )
+                fieldErrorMessage(contactAddOrEditForm.controls.firstName)
               }}</span>
               }
             </div>
@@ -75,13 +78,9 @@ import { Subject, takeUntil } from 'rxjs';
                 class="h-8 px-3 py-2"
                 formControlName="lastName"
               />
-              @if(fieldHasError(contactAddOrEditForm.controls.lastName,isInvalid()))
-              {
+              @if(fieldHasError(contactAddOrEditForm.controls.lastName)) {
               <span class="text-red-500">{{
-                fieldErrorMessage(
-                  contactAddOrEditForm.controls.lastName,
-                  isInvalid()
-                )
+                fieldErrorMessage(contactAddOrEditForm.controls.lastName)
               }}</span>
               }
             </div>
@@ -93,13 +92,9 @@ import { Subject, takeUntil } from 'rxjs';
                 class="h-8 px-3 py-2"
                 formControlName="email"
               />
-              @if(fieldHasError(contactAddOrEditForm.controls.email,isInvalid()))
-              {
+              @if(fieldHasError(contactAddOrEditForm.controls.email)) {
               <span class="text-red-500">{{
-                fieldErrorMessage(
-                  contactAddOrEditForm.controls.email,
-                  isInvalid()
-                )
+                fieldErrorMessage(contactAddOrEditForm.controls.email)
               }}</span>
               }
             </div>
@@ -111,13 +106,9 @@ import { Subject, takeUntil } from 'rxjs';
                 class="h-8 px-3 py-2"
                 formControlName="mobile"
               />
-              @if(fieldHasError(contactAddOrEditForm.controls.mobile,isInvalid()))
-              {
+              @if(fieldHasError(contactAddOrEditForm.controls.mobile)) {
               <span class="text-red-500">{{
-                fieldErrorMessage(
-                  contactAddOrEditForm.controls.mobile,
-                  isInvalid()
-                )
+                fieldErrorMessage(contactAddOrEditForm.controls.mobile)
               }}</span>
               }
             </div>
@@ -129,13 +120,9 @@ import { Subject, takeUntil } from 'rxjs';
                 class="h-8 px-3 py-2"
                 formControlName="address"
               />
-              @if(fieldHasError(contactAddOrEditForm.controls.address,
-              isInvalid())) {
+              @if(fieldHasError(contactAddOrEditForm.controls.address)) {
               <span class="text-red-500">{{
-                fieldErrorMessage(
-                  contactAddOrEditForm.controls.address,
-                  isInvalid()
-                )
+                fieldErrorMessage(contactAddOrEditForm.controls.address)
               }}</span>
               }
             </div>
@@ -143,9 +130,13 @@ import { Subject, takeUntil } from 'rxjs';
               type="submit"
               class="w-full h-8 px-3 py-2 mt-5"
               hlmBtn
-              [disabled]="contactAddOrEditForm.invalid"
+              [disabled]="
+                contactAddOrEditForm.invalid ||
+                !contactAddOrEditForm.dirty ||
+                isLoading()
+              "
             >
-              Submit
+              {{ contactAddOrEditForm.value.id === 0 ? 'Add' : 'Save' }}
             </button>
           </form>
         </div>
@@ -156,14 +147,11 @@ import { Subject, takeUntil } from 'rxjs';
 })
 export class AddOrEditContactComponent {
   @ViewChild('modalWrapper') modalWrapper!: ElementRef;
-  // contact1 = input.required<Contact | null | undefined>();
   private route = inject(ActivatedRoute);
   private contactService = inject(ContactService);
   private formBuilder = inject(FormBuilder);
   private destroyed$ = new Subject<void>();
-  isInvalidSignal = signal<boolean>(false);
-  isInvalid = computed(() => this.isInvalidSignal());
-  newContact = signal<Contact | null>(null);
+  isLoading = signal(false);
 
   public contactAddOrEditForm = this.formBuilder.group({
     id: this.formBuilder.nonNullable.control(0),
@@ -190,18 +178,44 @@ export class AddOrEditContactComponent {
       Validators.minLength(3),
       Validators.maxLength(100),
     ]),
+    status: this.formBuilder.nonNullable.control('ACTIVE'),
   });
 
-  openModal() {
+  openModal(contactId?: number) {
     const modalWrapper = this.modalWrapper.nativeElement;
     modalWrapper.classList.add('opacity-100');
     modalWrapper.classList.remove('opacity-0', 'pointer-events-none');
+    console.log('openModal');
+    console.log(contactId);
+    if (contactId !== undefined) {
+      console.log('contactId is not undefined');
+      this.contactService
+        .getContact(contactId!)
+        .pipe(takeUntil(this.destroyed$))
+        .subscribe({
+          next: (contact) => {
+            this.contactAddOrEditForm.patchValue({
+              id: contact.contactId,
+              firstName: contact.contactFirstName,
+              lastName: contact.contactLastName,
+              email: contact.contactEmail,
+              mobile: contact.contactMobileNumber,
+              address: contact.contactAddress,
+              status: contact.contactStatus,
+            });
+            console.log(contact);
+          },
+        });
+    }
   }
 
   closeModal() {
     const modalWrapper = this.modalWrapper.nativeElement;
     modalWrapper.classList.add('opacity-0', 'pointer-events-none');
     modalWrapper.classList.remove('opacity-100');
+    console.log('closeModal');
+    console.log(this.contactAddOrEditForm.value.id);
+    this.contactAddOrEditForm.reset();
   }
 
   // Prevent clicks inside the modal from closing it
@@ -209,38 +223,72 @@ export class AddOrEditContactComponent {
     event.stopPropagation();
   }
 
+  ngOnInit() {
+    console.log('AddOrEditContactComponent ngOnInit');
+  }
+
   handleSubmit() {
     if (this.contactAddOrEditForm.invalid) {
-      this.isInvalidSignal.set(true);
       return;
     }
-    this.isInvalidSignal.set(false);
+
     console.log('submit');
     console.log(this.contactAddOrEditForm.value);
-    this.newContact.set(this.contactAddOrEditForm.value as Contact);
-    console.log(this.newContact());
+
+    this.isLoading.set(true);
+    if (this.contactAddOrEditForm.value.id === 0) {
+      this.contactService
+        .addContact({
+          contactId: 0,
+          contactFirstName: this.contactAddOrEditForm.value.firstName!,
+          contactLastName: this.contactAddOrEditForm.value.lastName!,
+          contactEmail: this.contactAddOrEditForm.value.email!,
+          contactMobileNumber: this.contactAddOrEditForm.value.mobile!,
+          contactAddress: this.contactAddOrEditForm.value.address!,
+          contactStatus: this.contactAddOrEditForm.value.status!,
+        })
+        .pipe(takeUntil(this.destroyed$))
+        .subscribe({
+          next: (value) => {
+            console.log(value);
+            this.isLoading.set(false);
+            this.closeModal();
+          },
+          error: (err) => {
+            console.log(err);
+            this.isLoading.set(false);
+          },
+        });
+      return;
+    }
 
     this.contactService
-      .addContact({
-        contactId: 0,
+      .updateContact({
+        contactId: this.contactAddOrEditForm.value.id!,
         contactFirstName: this.contactAddOrEditForm.value.firstName!,
         contactLastName: this.contactAddOrEditForm.value.lastName!,
         contactEmail: this.contactAddOrEditForm.value.email!,
         contactMobileNumber: this.contactAddOrEditForm.value.mobile!,
         contactAddress: this.contactAddOrEditForm.value.address!,
-        contactStatus: 'ACTIVE',
+        contactStatus: this.contactAddOrEditForm.value.status!,
       })
       .pipe(takeUntil(this.destroyed$))
       .subscribe({
-        next(value) {
+        next: (value) => {
           console.log(value);
+          this.isLoading.set(false);
+          this.closeModal();
+        },
+        error: (err) => {
+          console.log(err);
+          this.isLoading.set(false);
         },
       });
   }
 
   // FormGroup Validators
-  fieldHasError(field: FormControl, isInvalid: boolean): boolean {
-    if ((field.hasError('required') && field.touched) || isInvalid) return true;
+  fieldHasError(field: FormControl): boolean {
+    if (field.hasError('required') && field.touched) return true;
     if (field.hasError('minlength') && field.touched) return true;
     if (field.hasError('maxlength') && field.touched) return true;
     if (field.hasError('email') && field.touched) return true;
@@ -248,15 +296,15 @@ export class AddOrEditContactComponent {
     return false;
   }
 
-  fieldErrorMessage(field: FormControl, isInvalid: boolean): string {
-    if (field.hasError('required') || isInvalid)
-      return 'This field is required.';
+  fieldErrorMessage(field: FormControl): string {
+    if (field.hasError('required')) return 'This field is required.';
     if (field.hasError('minlength')) return 'Minimum length is 3 characters.';
     if (field.hasError('maxlength')) return 'Maximum length is 50 characters.';
     if (field.hasError('email')) return 'Invalid email address.';
     if (field.hasError('pattern')) return 'Invalid mobile number.';
     return '';
   }
+
   ngOnDestroy() {
     this.destroyed$.next();
     this.destroyed$.complete();

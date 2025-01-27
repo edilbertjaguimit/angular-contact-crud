@@ -82,6 +82,7 @@ import { FormsModule } from '@angular/forms';
                 type="button"
                 hlmBtn
                 class="h-7 px-2 py-1 bg-transparent text-black border hover:text-white"
+                (click)="openModal(contact.contactId)"
               >
                 <i class="fa-solid fa-pen-to-square"></i>
               </button>
@@ -139,7 +140,7 @@ export class ContactComponent {
     this.destryoed$.complete();
   }
 
-  openModal() {
-    this.addOrEditContact.openModal();
+  openModal(id?: number) {
+    this.addOrEditContact.openModal(id === undefined ? undefined : id);
   }
 }
