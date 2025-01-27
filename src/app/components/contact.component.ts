@@ -75,8 +75,8 @@ import { ModalComponent } from '../shared/modal.component';
             <hlm-th class="flex-1">Action</hlm-th>
           </hlm-trow>
           <!-- Loop through the contacts -->
-          @if(filteredContacts().length !== 0 || contact().length !== 0){
-          @for(contact of filteredContacts(); track $index){
+          @if(filteredContacts().length !== 0){ @for(contact of
+          filteredContacts(); track $index){
           <hlm-trow>
             <hlm-td class="flex-1">{{ contact.contactId }}</hlm-td>
             <hlm-td class="flex-1 text-nowrap"
