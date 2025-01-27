@@ -131,6 +131,7 @@ import { stat } from 'fs';
               }}</span>
               }
             </div>
+            {{ isLoading() }}
             <button
               type="submit"
               class="w-full h-8 px-3 py-2 mt-5"
@@ -152,10 +153,8 @@ import { stat } from 'fs';
 })
 export class AddOrEditContactComponent {
   @ViewChild('modalWrapper') modalWrapper!: ElementRef;
-  private route = inject(ActivatedRoute);
-  private contactService = inject(ContactService);
-  private formBuilder = inject(FormBuilder);
   private destroyed$ = new Subject<void>();
+
   @Input() contactAddOrEditForm!: FormGroup<{
     id: FormControl<number>;
     firstName: FormControl<string>;
@@ -166,7 +165,7 @@ export class AddOrEditContactComponent {
     status: FormControl<string>;
   }>;
   @Output() handleSubmit = new EventEmitter<void>();
-  isLoading = signal(false);
+  @Input() isLoading = signal(false);
 
   openModal() {
     const modalWrapper = this.modalWrapper.nativeElement;

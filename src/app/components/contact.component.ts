@@ -120,12 +120,15 @@ import { ModalComponent } from '../shared/modal.component';
     <app-add-or-edit-contact
       [contactAddOrEditForm]="contactAddOrEditForm"
       (handleSubmit)="handleSubmit()"
+      [isLoading]="isLoading"
     />
+
     <app-modal
       title="Delete Contact"
       body="Are you sure you want to delete this contact?"
       buttonTitle="Delete"
       (deleteClick)="deleteContact()"
+      [isLoading]="isLoading"
     />
   `,
   styles: ``,
@@ -303,16 +306,19 @@ export class ContactComponent {
   deleteContact() {
     console.log('Delete contact 2', this.contactId());
     // Delete contact
+    this.isLoading.set(true);
     this.contactService
       .deleteContact(this.contactId()!)
       .pipe(takeUntil(this.destroyed$))
       .subscribe({
         next: () => {
+          this.isLoading.set(false);
           this.getContacts();
           this.modalWrapper.closeModal();
         },
         error: (err) => {
           console.error('Failed to delete contact:', err);
+          this.isLoading.set(false);
         },
       });
   }

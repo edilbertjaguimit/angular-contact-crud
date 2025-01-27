@@ -4,6 +4,7 @@ import {
   EventEmitter,
   Input,
   Output,
+  signal,
   ViewChild,
 } from '@angular/core';
 import { HlmButtonDirective } from '@spartan-ng/ui-button-helm';
@@ -44,6 +45,7 @@ import { HlmButtonDirective } from '@spartan-ng/ui-button-helm';
               class="h-8 px-3 py-2 bg-red-500 text-white hover:bg-red-600"
               hlmBtn
               (click)="deleteClick.emit()"
+              [disabled]="isLoading()"
             >
               {{ buttonTitle }}
             </button>
@@ -60,6 +62,7 @@ export class ModalComponent {
   @Input() body: any;
   @Input() buttonTitle: any;
   @Output() deleteClick = new EventEmitter();
+  @Output() isLoading = signal(false);
 
   // Prevent clicks inside the modal from closing it
   stopPropagation(event: Event) {
