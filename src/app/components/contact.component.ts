@@ -308,11 +308,6 @@ export class ContactComponent {
       .pipe(takeUntil(this.destroyed$))
       .subscribe({
         next: () => {
-          // this.contacts.set(
-          //   this.contacts().filter(
-          //     (contact) => contact.contactId !== this.contactId()
-          //   )
-          // );
           this.getContacts();
           this.modalWrapper.closeModal();
         },
