@@ -2,9 +2,11 @@ import {
   Component,
   computed,
   ElementRef,
+  EventEmitter,
   inject,
   input,
   Input,
+  Output,
   signal,
   ViewChild,
 } from '@angular/core';
@@ -55,7 +57,10 @@ import { stat } from 'fs';
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
-          <form [formGroup]="contactAddOrEditForm" (ngSubmit)="handleSubmit()">
+          <form
+            [formGroup]="contactAddOrEditForm"
+            (ngSubmit)="handleSubmit.emit()"
+          >
             <div class="flex flex-col gap-2 mt-2">
               <label for="">First Name</label>
               <input
@@ -151,62 +156,72 @@ export class AddOrEditContactComponent {
   private contactService = inject(ContactService);
   private formBuilder = inject(FormBuilder);
   private destroyed$ = new Subject<void>();
+  @Input() contactAddOrEditForm!: FormGroup<{
+    id: FormControl<number>;
+    firstName: FormControl<string>;
+    lastName: FormControl<string>;
+    email: FormControl<string>;
+    mobile: FormControl<string>;
+    address: FormControl<string>;
+    status: FormControl<string>;
+  }>;
+  @Output() handleSubmit = new EventEmitter<void>();
   isLoading = signal(false);
 
-  public contactAddOrEditForm = this.formBuilder.group({
-    id: this.formBuilder.nonNullable.control(0),
-    firstName: this.formBuilder.nonNullable.control('', [
-      Validators.required,
-      Validators.minLength(3),
-      Validators.maxLength(50),
-    ]),
-    lastName: this.formBuilder.nonNullable.control('', [
-      Validators.required,
-      Validators.minLength(3),
-      Validators.maxLength(50),
-    ]),
-    email: this.formBuilder.nonNullable.control('', [
-      Validators.required,
-      Validators.email,
-    ]),
-    mobile: this.formBuilder.nonNullable.control('', [
-      Validators.required,
-      Validators.pattern(/^[0-9]{11}$/),
-    ]),
-    address: this.formBuilder.nonNullable.control('', [
-      Validators.required,
-      Validators.minLength(3),
-      Validators.maxLength(100),
-    ]),
-    status: this.formBuilder.nonNullable.control('ACTIVE'),
-  });
+  // public contactAddOrEditForm = this.formBuilder.group({
+  //   id: this.formBuilder.nonNullable.control(0),
+  //   firstName: this.formBuilder.nonNullable.control('', [
+  //     Validators.required,
+  //     Validators.minLength(3),
+  //     Validators.maxLength(50),
+  //   ]),
+  //   lastName: this.formBuilder.nonNullable.control('', [
+  //     Validators.required,
+  //     Validators.minLength(3),
+  //     Validators.maxLength(50),
+  //   ]),
+  //   email: this.formBuilder.nonNullable.control('', [
+  //     Validators.required,
+  //     Validators.email,
+  //   ]),
+  //   mobile: this.formBuilder.nonNullable.control('', [
+  //     Validators.required,
+  //     Validators.pattern(/^[0-9]{11}$/),
+  //   ]),
+  //   address: this.formBuilder.nonNullable.control('', [
+  //     Validators.required,
+  //     Validators.minLength(3),
+  //     Validators.maxLength(100),
+  //   ]),
+  //   status: this.formBuilder.nonNullable.control('ACTIVE'),
+  // });
 
-  openModal(contactId?: number) {
+  openModal() {
     const modalWrapper = this.modalWrapper.nativeElement;
     modalWrapper.classList.add('opacity-100');
     modalWrapper.classList.remove('opacity-0', 'pointer-events-none');
     console.log('openModal');
-    console.log(contactId);
-    if (contactId !== undefined) {
-      console.log('contactId is not undefined');
-      this.contactService
-        .getContact(contactId!)
-        .pipe(takeUntil(this.destroyed$))
-        .subscribe({
-          next: (contact) => {
-            this.contactAddOrEditForm.patchValue({
-              id: contact.contactId,
-              firstName: contact.contactFirstName,
-              lastName: contact.contactLastName,
-              email: contact.contactEmail,
-              mobile: contact.contactMobileNumber,
-              address: contact.contactAddress,
-              status: contact.contactStatus,
-            });
-            console.log(contact);
-          },
-        });
-    }
+    // console.log(contactId);
+    // if (contactId !== undefined) {
+    //   console.log('contactId is not undefined');
+    //   this.contactService
+    //     .getContact(contactId!)
+    //     .pipe(takeUntil(this.destroyed$))
+    //     .subscribe({
+    //       next: (contact) => {
+    //         this.contactAddOrEditForm.patchValue({
+    //           id: contact.contactId,
+    //           firstName: contact.contactFirstName,
+    //           lastName: contact.contactLastName,
+    //           email: contact.contactEmail,
+    //           mobile: contact.contactMobileNumber,
+    //           address: contact.contactAddress,
+    //           status: contact.contactStatus,
+    //         });
+    //         console.log(contact);
+    //       },
+    //     });
+    // }
   }
 
   closeModal() {
@@ -227,64 +242,64 @@ export class AddOrEditContactComponent {
     console.log('AddOrEditContactComponent ngOnInit');
   }
 
-  handleSubmit() {
-    if (this.contactAddOrEditForm.invalid) {
-      return;
-    }
+  // handleSubmit() {
+  //   if (this.contactAddOrEditForm.invalid) {
+  //     return;
+  //   }
 
-    console.log('submit');
-    console.log(this.contactAddOrEditForm.value);
+  //   console.log('submit');
+  //   console.log(this.contactAddOrEditForm.value);
 
-    this.isLoading.set(true);
-    if (this.contactAddOrEditForm.value.id === 0) {
-      this.contactService
-        .addContact({
-          contactId: 0,
-          contactFirstName: this.contactAddOrEditForm.value.firstName!,
-          contactLastName: this.contactAddOrEditForm.value.lastName!,
-          contactEmail: this.contactAddOrEditForm.value.email!,
-          contactMobileNumber: this.contactAddOrEditForm.value.mobile!,
-          contactAddress: this.contactAddOrEditForm.value.address!,
-          contactStatus: this.contactAddOrEditForm.value.status!,
-        })
-        .pipe(takeUntil(this.destroyed$))
-        .subscribe({
-          next: (value) => {
-            console.log(value);
-            this.isLoading.set(false);
-            this.closeModal();
-          },
-          error: (err) => {
-            console.log(err);
-            this.isLoading.set(false);
-          },
-        });
-      return;
-    }
+  //   this.isLoading.set(true);
+  //   if (this.contactAddOrEditForm.value.id === 0) {
+  //     this.contactService
+  //       .addContact({
+  //         contactId: 0,
+  //         contactFirstName: this.contactAddOrEditForm.value.firstName!,
+  //         contactLastName: this.contactAddOrEditForm.value.lastName!,
+  //         contactEmail: this.contactAddOrEditForm.value.email!,
+  //         contactMobileNumber: this.contactAddOrEditForm.value.mobile!,
+  //         contactAddress: this.contactAddOrEditForm.value.address!,
+  //         contactStatus: this.contactAddOrEditForm.value.status!,
+  //       })
+  //       .pipe(takeUntil(this.destroyed$))
+  //       .subscribe({
+  //         next: (value) => {
+  //           console.log(value);
+  //           this.isLoading.set(false);
+  //           this.closeModal();
+  //         },
+  //         error: (err) => {
+  //           console.log(err);
+  //           this.isLoading.set(false);
+  //         },
+  //       });
+  //     return;
+  //   }
 
-    this.contactService
-      .updateContact({
-        contactId: this.contactAddOrEditForm.value.id!,
-        contactFirstName: this.contactAddOrEditForm.value.firstName!,
-        contactLastName: this.contactAddOrEditForm.value.lastName!,
-        contactEmail: this.contactAddOrEditForm.value.email!,
-        contactMobileNumber: this.contactAddOrEditForm.value.mobile!,
-        contactAddress: this.contactAddOrEditForm.value.address!,
-        contactStatus: this.contactAddOrEditForm.value.status!,
-      })
-      .pipe(takeUntil(this.destroyed$))
-      .subscribe({
-        next: (value) => {
-          console.log(value);
-          this.isLoading.set(false);
-          this.closeModal();
-        },
-        error: (err) => {
-          console.log(err);
-          this.isLoading.set(false);
-        },
-      });
-  }
+  //   this.contactService
+  //     .updateContact({
+  //       contactId: this.contactAddOrEditForm.value.id!,
+  //       contactFirstName: this.contactAddOrEditForm.value.firstName!,
+  //       contactLastName: this.contactAddOrEditForm.value.lastName!,
+  //       contactEmail: this.contactAddOrEditForm.value.email!,
+  //       contactMobileNumber: this.contactAddOrEditForm.value.mobile!,
+  //       contactAddress: this.contactAddOrEditForm.value.address!,
+  //       contactStatus: this.contactAddOrEditForm.value.status!,
+  //     })
+  //     .pipe(takeUntil(this.destroyed$))
+  //     .subscribe({
+  //       next: (value) => {
+  //         console.log(value);
+  //         this.isLoading.set(false);
+  //         this.closeModal();
+  //       },
+  //       error: (err) => {
+  //         console.log(err);
+  //         this.isLoading.set(false);
+  //       },
+  //     });
+  // }
 
   // FormGroup Validators
   fieldHasError(field: FormControl): boolean {
