@@ -62,7 +62,7 @@ export class ModalComponent {
   @Input() body: any;
   @Input() buttonTitle: any;
   @Output() deleteClick = new EventEmitter();
-  @Output() isLoading = signal(false);
+  @Input() isLoading = signal(false);
 
   // Prevent clicks inside the modal from closing it
   stopPropagation(event: Event) {
